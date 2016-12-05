@@ -91,6 +91,7 @@ _asset_timestamp_fields = frozenset({
 })
 
 SymbolOwnership = namedtuple('SymbolOwnership', 'start end sid symbol')
+OwnershipPeriod = namedtuple('OwnershipPeriod', 'start end sid value')
 
 
 @curry
@@ -312,6 +313,50 @@ class AssetFinder(object):
             fuzzy_owners.extend(owners)
             fuzzy_owners.sort()
         return fuzzy_mappings
+
+    @lazyval
+    def supplementary_map(self):
+        rows = sa.select(self.extra_mappings.c).execute().fetchall()
+
+        mappings = {}
+        for row in rows:
+            mappings.setdefault(
+                (row.mapping_type, row.value),
+                [],
+            ).append(
+                OwnershipPeriod(
+                    pd.Timestamp(row.start_date, unit='ns', tz='utc'),
+                    pd.Timestamp(row.end_date, unit='ns', tz='utc'),
+                    row.sid,
+                    row.value,
+                ),
+            )
+
+        return valmap(
+            lambda v: tuple(
+                OwnershipPeriod(
+                    a.start,
+                    b.start,
+                    a.sid,
+                    a.value,
+                ) for a, b in sliding_window(
+                    2,
+                    concatv(
+                        sorted(v),
+                        # concat with a fake ownership object to make the last
+                        # end date be max timestamp
+                        [OwnershipPeriod(
+                            pd.Timestamp.max.tz_localize('utc'),
+                            None,
+                            None,
+                            None,
+                        )],
+                    ),
+                )
+            ),
+            mappings,
+            factory=lambda: mappings,
+        )
 
     def lookup_asset_types(self, sids):
         """
