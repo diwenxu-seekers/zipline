@@ -106,6 +106,7 @@ _root_symbols_defaults = {
 
 # Default values for the supplementary_mappings DataFrame
 _supplementary_mappings_defaults = {
+    'sid': None,
     'value': None,
     'mapping_type': None,
     'start_date': 0,
