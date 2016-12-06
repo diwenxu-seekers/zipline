@@ -664,6 +664,17 @@ class AssetDBWriter(object):
 
         return futures_output
 
+    def _normalize_supplementary_mappings(self, mappings):
+        mappings_output = _generate_output_dataframe(
+            data_subset=mappings,
+            defaults=_supplementary_mappings_defaults,
+        )
+
+        for col in ('start_date', 'end_date'):
+            mappings_output[col] = _dt_to_epoch_ns(mappings_output[col])
+
+        return mappings_output
+
     def _load_data(
         self,
         equities,
@@ -689,6 +700,10 @@ class AssetDBWriter(object):
         equities_output, equities_mappings = self._normalize_equities(equities)
         futures_output = self._normalize_futures(futures)
 
+        supplementary_mappings_output = self._normalize_supplementary_mappings(
+            supplementary_mappings,
+        )
+
         exchanges_output = _generate_output_dataframe(
             data_subset=exchanges,
             defaults=_exchanges_defaults,
@@ -697,11 +712,6 @@ class AssetDBWriter(object):
         root_symbols_output = _generate_output_dataframe(
             data_subset=root_symbols,
             defaults=_root_symbols_defaults,
-        )
-
-        supplementary_mappings_output = _generate_output_dataframe(
-            data_subset=supplementary_mappings,
-            defaults=_supplementary_mappings_defaults,
         )
 
         return AssetData(
