@@ -96,6 +96,34 @@ SymbolOwnership = namedtuple('SymbolOwnership', 'start end sid symbol')
 OwnershipPeriod = namedtuple('OwnershipPeriod', 'start end sid value')
 
 
+def merge_ownership_periods(mappings):
+    return valmap(
+        lambda v: tuple(
+            OwnershipPeriod(
+                a.start,
+                b.start,
+                a.sid,
+                a.value,
+            ) for a, b in sliding_window(
+                2,
+                concatv(
+                    sorted(v),
+                    # concat with a fake ownership object to make the last
+                    # end date be max timestamp
+                    [OwnershipPeriod(
+                        pd.Timestamp.max.tz_localize('utc'),
+                        None,
+                        None,
+                        None,
+                    )],
+                ),
+            )
+        ),
+        mappings,
+        factory=lambda: mappings,
+    )
+
+
 @curry
 def _filter_kwargs(names, dict_):
     """Filter out kwargs from a dictionary.
@@ -334,31 +362,7 @@ class AssetFinder(object):
                 ),
             )
 
-        return valmap(
-            lambda v: tuple(
-                OwnershipPeriod(
-                    a.start,
-                    b.start,
-                    a.sid,
-                    a.value,
-                ) for a, b in sliding_window(
-                    2,
-                    concatv(
-                        sorted(v),
-                        # concat with a fake ownership object to make the last
-                        # end date be max timestamp
-                        [OwnershipPeriod(
-                            pd.Timestamp.max.tz_localize('utc'),
-                            None,
-                            None,
-                            None,
-                        )],
-                    ),
-                )
-            ),
-            mappings,
-            factory=lambda: mappings,
-        )
+        return merge_ownership_periods(mappings)
 
     def lookup_asset_types(self, sids):
         """
