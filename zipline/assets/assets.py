@@ -364,6 +364,26 @@ class AssetFinder(object):
 
         return merge_ownership_periods(mappings)
 
+    @lazyval
+    def supplementary_map_by_sid(self):
+        rows = sa.select(self.supplementary_mappings.c).execute().fetchall()
+
+        mappings = {}
+        for row in rows:
+            mappings.setdefault(
+                (row.mapping_type, row.sid),
+                [],
+            ).append(
+                OwnershipPeriod(
+                    pd.Timestamp(row.start_date, unit='ns', tz='utc'),
+                    pd.Timestamp(row.end_date, unit='ns', tz='utc'),
+                    row.sid,
+                    row.value,
+                ),
+            )
+
+        return merge_ownership_periods(mappings)
+
     def lookup_asset_types(self, sids):
         """
         Retrieve asset types for a list of sids.
