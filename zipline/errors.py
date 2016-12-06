@@ -304,6 +304,31 @@ Root symbol '{root_symbol}' was not found.
 """.strip()
 
 
+class ValueNotFoundForMappingType(ZiplineError):
+    """
+    Raised when a lookup_by_supplementary_mapping() call contains a
+    value does not exist for the specified mapping type.
+    """
+    msg = """
+Value '{value}' was not found for mapping type '{type}'.
+""".strip()
+
+
+class MultipleValuesFoundForMappingType(ZiplineError):
+    """
+    Raised when a lookup_by_supplementary_mapping() call contains a
+    value that changed over time for the specified mapping type and is
+    thus not resolvable without additional information provided via
+    as_of_date.
+    """
+    msg = """
+Multiple occurrences of the value '{value}' found for mapping type '{type}'.
+Use the as_of_date' argument to specify when the lookup should be valid.
+
+Possible options: {options}
+    """.strip()
+
+
 class SidsNotFound(ZiplineError):
     """
     Raised when a retrieve_asset() or retrieve_all() call contains a

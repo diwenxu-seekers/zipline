@@ -43,6 +43,8 @@ from zipline.errors import (
     FutureContractsNotFound,
     MapAssetIdentifierIndexError,
     MultipleSymbolsFound,
+    MultipleValuesFoundForMappingType,
+    ValueNotFoundForMappingType,
     SidsNotFound,
     SymbolNotFound,
 )
@@ -853,6 +855,41 @@ class AssetFinder(object):
         if not data:
             raise SymbolNotFound(symbol=symbol)
         return self.retrieve_asset(data['sid'])
+
+    def lookup_by_supplementary_mapping(self, mapping_type, value, as_of_date):
+        try:
+            owners = self.supplementary_map[
+                mapping_type,
+                value,
+            ]
+            assert owners, 'empty owners list for %r' % (mapping_type, value)
+        except KeyError:
+            # no equity has ever held this value
+            raise ValueNotFoundForMappingType(type=mapping_type, value=value)
+
+        if not as_of_date:
+            if len(owners) > 1:
+                # more than one equity has held this value, this is ambigious
+                # without the date
+                raise MultipleValuesFoundForMappingType(
+                    type=mapping_type,
+                    value=value,
+                    options=set(map(
+                        compose(self.retrieve_asset, attrgetter('sid')),
+                        owners,
+                    )),
+                )
+            # exactly one equity has ever held this symbol, we may resolve
+            # without the date
+            return self.retrieve_asset(owners[0].sid)
+
+        for start, end, sid, _ in owners:
+            if start <= as_of_date < end:
+                # find the equity that owned it on the given asof date
+                return self.retrieve_asset(sid)
+
+        # no equity held the value on the given asof date
+        raise ValueNotFoundForMappingType(type=mapping_type, value=value)
 
     @weak_lru_cache(100)
     def _get_future_sids_for_root_symbol(self, root_symbol, as_of_date_ns):
