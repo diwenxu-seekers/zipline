@@ -28,7 +28,7 @@ from zipline.assets.asset_db_schema import (
     asset_router,
     equities as equities_table,
     equity_symbol_mappings,
-    extra_mappings as extra_mappings_table,
+    supplementary_mappings as supplementary_mappings_table,
     futures_contracts as futures_contracts_table,
     futures_exchanges,
     futures_root_symbols,
@@ -48,7 +48,7 @@ AssetData = namedtuple(
         'futures',
         'exchanges',
         'root_symbols',
-        'extra_mappings',
+        'supplementary_mappings',
     ),
 )
 
@@ -104,8 +104,8 @@ _root_symbols_defaults = {
     'exchange': None,
 }
 
-# Default values for the extra_mappings DataFrame
-_extra_mappings_defaults = {
+# Default values for the supplementary_mappings DataFrame
+_supplementary_mappings_defaults = {
     'value': None,
     'mapping_type': None,
     'start_date': 0,
@@ -366,7 +366,7 @@ class AssetDBWriter(object):
               futures=None,
               exchanges=None,
               root_symbols=None,
-              extra_mappings=None,
+              supplementary_mappings=None,
               chunk_size=DEFAULT_CHUNK_SIZE):
         """Write asset metadata to a sqlite database.
 
@@ -444,7 +444,7 @@ class AssetDBWriter(object):
                   A short description of this root symbol.
               exchange : str
                   The exchange where this root symbol is traded.
-        extra_mappings : pd.DataFrame, optional
+        supplementary_mappings : pd.DataFrame, optional
             Additional mappings from values of abitrary type to assets.
         chunk_size : int, optional
             The amount of rows to write to the SQLite table at once.
@@ -467,8 +467,8 @@ class AssetDBWriter(object):
                 exchanges if exchanges is not None else pd.DataFrame(),
                 root_symbols if root_symbols is not None else pd.DataFrame(),
                 (
-                    extra_mappings
-                    if extra_mappings is not None
+                    supplementary_mappings
+                    if supplementary_mappings is not None
                     else pd.DataFrame()
                 ),
             )
@@ -486,8 +486,8 @@ class AssetDBWriter(object):
                 chunk_size,
             )
             self._write_df_to_table(
-                extra_mappings_table,
-                data.extra_mappings,
+                supplementary_mappings_table,
+                data.supplementary_mappings,
                 conn,
                 chunk_size,
             )
@@ -670,7 +670,7 @@ class AssetDBWriter(object):
         futures,
         exchanges,
         root_symbols,
-        extra_mappings,
+        supplementary_mappings,
     ):
         """
         Returns a standard set of pandas.DataFrames:
@@ -699,9 +699,9 @@ class AssetDBWriter(object):
             defaults=_root_symbols_defaults,
         )
 
-        extra_mappings_output = _generate_output_dataframe(
-            data_subset=extra_mappings,
-            defaults=_extra_mappings_defaults,
+        supplementary_mappings_output = _generate_output_dataframe(
+            data_subset=supplementary_mappings,
+            defaults=_supplementary_mappings_defaults,
         )
 
         return AssetData(
@@ -710,5 +710,5 @@ class AssetDBWriter(object):
             futures=futures_output,
             exchanges=exchanges_output,
             root_symbols=root_symbols_output,
-            extra_mappings=extra_mappings_output,
+            supplementary_mappings=supplementary_mappings_output,
         )

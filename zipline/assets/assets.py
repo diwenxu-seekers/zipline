@@ -316,7 +316,7 @@ class AssetFinder(object):
 
     @lazyval
     def supplementary_map(self):
-        rows = sa.select(self.extra_mappings.c).execute().fetchall()
+        rows = sa.select(self.supplementary_mappings.c).execute().fetchall()
 
         mappings = {}
         for row in rows:
